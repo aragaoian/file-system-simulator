@@ -2,17 +2,20 @@
 #include <iostream>
 using namespace std;
 
-typedef enum
-{
-    FILE_TYPE,
-    DIRECTORY_TYPE
-} NodeType;
+typedef enum { FILE_TYPE, DIRECTORY_TYPE } NodeType;
 
-typedef struct File
-{
-    char *name;
-    char *content;
-    size_t size;
-} File;
+struct File {
+    string name;
+    string content;
+};
 
-typedef struct Directory Directory;
+struct Directory;
+
+struct TreeNodeType {
+    string name;
+    NodeType type;
+    union {
+        File *file;
+        Directory *directory;
+    } data;
+};
