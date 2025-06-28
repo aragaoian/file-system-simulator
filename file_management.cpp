@@ -1,29 +1,37 @@
 #include "BTree.cpp"
 #include "structs.h"
+#include "utils.cpp"
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <bitset>
 using namespace std;
 
 class FileSystem {
     Directory *root;
-    vector<TreeNodeType> diskImg;
+    fstream diskImage;
 
   public:
     FileSystem(string imgFile) {
         root = new Directory();
         root->tree = new BTree(3);
 
-        fstream diskImage("fs.img");
+        diskImage.open("fs.img", ios::in | ios::out | ios::binary | ios::app);
+        if (!diskImage.is_open()) {
+            cerr << "Erro ao abrir o arquivo fs.img" << endl;
+        }
     }
-    ~FileSystem() { delete root; }
+    ~FileSystem() { 
+        delete root;
+        diskImage.close();
+    }
 
     void mkdir(string name) {
         TreeNodeType *dir = create_directory(name);
         root->tree->insert(dir);
     }
 
-    void new_file(string name, string content) {
+    void touch(string name, string content) {
         TreeNodeType *file = create_txt_file(name, content);
         root->tree->insert(file);
     }
@@ -41,7 +49,7 @@ class FileSystem {
         }
     }
 
-    static void printNode(TreeNodeType *node) { cout << (node->type == DIRECTORY_TYPE ? "D" : "F") << " - " << node->name << "\n"; }
+    static void printNode(TreeNodeType *node, int ignoreParam = 0) { cout << (node->type == DIRECTORY_TYPE ? "D" : "F") << " - " << node->name << "\n"; }
 
     void ls() { root->tree->traverse(printNode); }
 
@@ -66,8 +74,18 @@ class FileSystem {
         }
     }
 
-    void delete_file(string name) {}
-    bool delete_directory(string name) { return false; }
+    void rm(string name, bool recursive = false){
+        TreeNodeType *node = root->tree->search(name);
+        if(node == NULL){
+            cout << (!recursive ? "Arquivo não encontrado!" : "Pasta não encontrada!") << "\n";
+            return;
+        }
+        if(!recursive){
+            delete_file(node);
+            return;
+        }
+        delete_directory(node);
+    }
 
   private:
     TreeNodeType *create_txt_file(string name, string content) {
@@ -97,5 +115,20 @@ class FileSystem {
         return node;
     }
 
-    static void save_img() {}
+    void delete_file(TreeNodeType *file) {
+        root->tree->deletion(file);
+    }
+
+    void delete_directory(TreeNodeType *dir) {
+        dir->data.directory->parent->tree->deletion(dir);
+        delete dir;
+    }
+
+    static void save_img(TreeNodeType *node, int h) {
+        fstream diskImage("fs.img", ios::app);
+        if(node->type == FILE_TYPE){
+            diskImage << "F" << node->name << "\n";
+            diskImage << tab(h) << node->data.file->content.length() << " | " << node->data.file->content << "\n";
+        }
+    }
 };

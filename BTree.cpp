@@ -1,4 +1,4 @@
-// Searching a key on a B-tree in C++
+// Searching a key on a B-tree in childs++
 
 #include "structs.h"
 #include <iostream>
@@ -7,7 +7,7 @@ using namespace std;
 class TreeNode {
     TreeNodeType **keys;
     int t;
-    TreeNode **C;
+    TreeNode **childs;
     int n;
     bool leaf;
 
@@ -17,7 +17,7 @@ class TreeNode {
         leaf = leaf1;
 
         keys = new TreeNodeType *[2 * t - 1];
-        C = new TreeNode *[2 * t];
+        childs = new TreeNode *[2 * t];
 
         n = 0;
     }
@@ -37,16 +37,196 @@ class TreeNode {
             while (i >= 0 && keys[i]->name > k->name)
                 i--;
 
-            if (C[i + 1]->n == 2 * t - 1) {
-                splitChild(i + 1, C[i + 1]);
+            if (childs[i + 1]->n == 2 * t - 1) {
+                splitchildshild(i + 1, childs[i + 1]);
 
                 if (keys[i + 1]->name < k->name) i++;
             }
-            C[i + 1]->insertNonFull(k);
+            childs[i + 1]->insertNonFull(k);
         }
     }
 
-    void splitChild(int i, TreeNode *y) {
+    int findKey(TreeNodeType *k) {
+        int idx = 0;
+        while (idx < n && keys[idx] < k)
+            ++idx;
+        return idx;
+    }
+
+
+    void deletion(TreeNodeType *k) {
+        int idx = findKey(k);
+
+        if (idx < n && keys[idx] == k) {
+            if (leaf) {
+                removeFromLeaf(idx);
+            }else{
+                removeFromNonLeaf(idx);
+            }
+        } else {
+            if (leaf) {
+                cout << "The key " << k << " is does not exist in the tree\n";
+                return;
+            }
+
+            bool flag = ((idx == n) ? true : false);
+
+            if (childs[idx]->n < t) fill(idx);
+
+            if (flag && idx > n){
+                childs[idx - 1]->deletion(k);
+            }else{
+                childs[idx]->deletion(k);
+            }
+        }
+        return;
+    }
+
+    // Remove from the leaf
+    void removeFromLeaf(int idx) {
+        for (int i = idx + 1; i < n; ++i)
+            keys[i - 1] = keys[i];
+
+        n--;
+
+        return;
+    }
+
+    // Delete from non leaf node
+    void removeFromNonLeaf(int idx) {
+        TreeNodeType *k = keys[idx];
+
+        if (childs[idx]->n >= t) {
+            TreeNodeType *pred = getPredecessor(idx);
+            keys[idx] = pred;
+            childs[idx]->deletion(pred);
+        }
+
+        else if (childs[idx + 1]->n >= t) {
+            TreeNodeType *succ = getSuccessor(idx);
+            keys[idx] = succ;
+            childs[idx + 1]->deletion(succ);
+        }
+
+        else {
+            merge(idx);
+            childs[idx]->deletion(k);
+        }
+        return;
+    }
+
+    TreeNodeType *getPredecessor(int idx) {
+        TreeNode *cur = childs[idx];
+        while (!cur->leaf)
+            cur = cur->childs[cur->n];
+
+        return cur->keys[cur->n - 1];
+    }
+
+    TreeNodeType *getSuccessor(int idx) {
+        TreeNode *cur = childs[idx + 1];
+        while (!cur->leaf)
+            cur = cur->childs[0];
+
+        return cur->keys[0];
+    }
+
+    void fill(int idx) {
+        if (idx != 0 && childs[idx - 1]->n >= t)
+            borrowFromPrev(idx);
+
+        else if (idx != n && childs[idx + 1]->n >= t)
+            borrowFromNext(idx);
+
+        else {
+            if (idx != n)
+            merge(idx);
+            else
+            merge(idx - 1);
+        }
+        return;
+    }
+
+    // Borrow from previous
+    void borrowFromPrev(int idx) {
+        TreeNode *child = childs[idx];
+        TreeNode *sibling = childs[idx - 1];
+
+        for (int i = child->n - 1; i >= 0; --i)
+            child->keys[i + 1] = child->keys[i];
+
+        if (!child->leaf) {
+            for (int i = child->n; i >= 0; --i)
+            child->childs[i + 1] = child->childs[i];
+        }
+
+        child->keys[0] = keys[idx - 1];
+
+        if (!child->leaf)
+            child->childs[0] = sibling->childs[sibling->n];
+
+        keys[idx - 1] = sibling->keys[sibling->n - 1];
+
+        child->n += 1;
+        sibling->n -= 1;
+
+        return;
+    }
+
+    // Borrow from the next
+    void borrowFromNext(int idx) {
+        TreeNode *child = childs[idx];
+        TreeNode *sibling = childs[idx + 1];
+
+        child->keys[(child->n)] = keys[idx];
+
+        if (!(child->leaf))
+            child->childs[(child->n) + 1] = sibling->childs[0];
+
+        keys[idx] = sibling->keys[0];
+
+        for (int i = 1; i < sibling->n; ++i)
+            sibling->keys[i - 1] = sibling->keys[i];
+
+        if (!sibling->leaf) {
+            for (int i = 1; i <= sibling->n; ++i)
+            sibling->childs[i - 1] = sibling->childs[i];
+        }
+
+        child->n += 1;
+        sibling->n -= 1;
+
+        return;
+    }
+
+    void merge(int idx) {
+        TreeNode *child = childs[idx];
+        TreeNode *sibling = childs[idx + 1];
+
+        child->keys[t - 1] = keys[idx];
+
+        for (int i = 0; i < sibling->n; ++i)
+            child->keys[i + t] = sibling->keys[i];
+
+        if (!child->leaf) {
+            for (int i = 0; i <= sibling->n; ++i)
+            child->childs[i + t] = sibling->childs[i];
+        }
+
+        for (int i = idx + 1; i < n; ++i)
+            keys[i - 1] = keys[i];
+
+        for (int i = idx + 2; i <= n; ++i)
+            childs[i - 1] = childs[i];
+
+        child->n += sibling->n + 1;
+        n--;
+
+        delete (sibling);
+        return;
+    }
+
+    void splitchildshild(int i, TreeNode *y) {
         TreeNode *z = new TreeNode(y->t, y->leaf);
         z->n = t - 1;
 
@@ -55,14 +235,14 @@ class TreeNode {
 
         if (y->leaf == false) {
             for (int j = 0; j < t; j++)
-                z->C[j] = y->C[j + t];
+                z->childs[j] = y->childs[j + t];
         }
 
         y->n = t - 1;
         for (int j = n; j >= i + 1; j--)
-            C[j + 1] = C[j];
+            childs[j + 1] = childs[j];
 
-        C[i + 1] = z;
+        childs[i + 1] = z;
 
         for (int j = n - 1; j >= i; j--)
             keys[j + 1] = keys[j];
@@ -71,14 +251,14 @@ class TreeNode {
         n = n + 1;
     }
 
-    void traverse(void (*func)(TreeNodeType *)) {
+    void traverse(void (*func)(TreeNodeType *, int)) {
         int i;
         for (i = 0; i < n; i++) {
-            if (leaf == false) C[i]->traverse(func);
-            func(keys[i]);
+            if (leaf == false) childs[i]->traverse(func);
+            func(keys[i], 0);
         }
 
-        if (leaf == false) C[i]->traverse(func);
+        if (leaf == false) childs[i]->traverse(func);
     }
 
     TreeNodeType *search(string k) {
@@ -90,7 +270,17 @@ class TreeNode {
 
         if (leaf == true) return NULL;
 
-        return C[i]->search(k);
+        return childs[i]->search(k);
+    }
+
+    int height(TreeNode *node){
+        if(leaf) return 0;
+        int i;
+        int maxHeight = 0;
+        for (i = 0; i < n; i++) {
+            maxHeight = max(maxHeight, height(childs[i]));
+        }
+        return 1 + maxHeight;
     }
 
     friend class BTree;
@@ -106,7 +296,7 @@ class BTree {
         t = temp;
     }
 
-    void traverse(void (*func)(TreeNodeType *)) {
+    void traverse(void (*func)(TreeNodeType *, int)) {
         if (root != NULL) root->traverse(func);
     }
 
@@ -121,19 +311,49 @@ class BTree {
             if (root->n == 2 * t - 1) {
                 TreeNode *s = new TreeNode(t, false);
 
-                s->C[0] = root;
+                s->childs[0] = root;
 
-                s->splitChild(0, root);
+                s->splitchildshild(0, root);
 
                 int i = 0;
                 if (s->keys[0]->name < k->name) i++;
-                s->C[i]->insertNonFull(k);
+                s->childs[i]->insertNonFull(k);
 
                 root = s;
             } else
                 root->insertNonFull(k);
         }
     }
+
+    void deletion(TreeNodeType *k) {
+        if (!root) {
+            cout << "The tree is empty\n";
+            return;
+        }
+
+        root->deletion(k);
+
+        if (root->n == 0) {
+            TreeNode *tmp = root;
+            if (root->leaf)
+            root = NULL;
+            else
+            root = root->childs[0];
+
+            delete tmp;
+        }
+        return;
+    }
+
+    int height(TreeNodeType *k){
+        if(!root){
+            cout << "The tree is empty\n";
+            return;
+        }
+        
+    }
+
+
 };
 
 struct Directory {

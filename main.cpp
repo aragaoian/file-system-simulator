@@ -15,18 +15,23 @@ using namespace std;
 
 int main() {
     FileSystem fs = FileSystem("test.img");
-    fs.new_file("oi.txt", "content oi");
-    fs.new_file("oiee.txt", "content oieee");
+    fs.touch("oi.txt", "content oi");
+    fs.touch("oiee.txt", "content oieee");
     fs.mkdir("testePasta");
     fs.ls();
     cout << "-------------------\n";
     fs.cd("testePasta");
-    fs.new_file("oiee.txt", "content oieee 2");
+    fs.touch("oiee.txt", "content oieee 2");
     fs.ls();
     fs.cat("oiee.txt");
     cout << "-------------------\n";
+    // fs.rm("oi.txt");
+    // fs.ls();
     fs.cd("..");
+    fs.rm("testePasta", true);
     fs.ls();
-    fs.cd("..");
+    // fs.cd("..");
+    // fs.ls();
+    // fs.cd("..");
     return 0;
 }
