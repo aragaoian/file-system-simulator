@@ -1,10 +1,10 @@
 #include "BTree.cpp"
 #include "structs.h"
 #include "utils.cpp"
+#include <bitset>
 #include <fstream>
 #include <iostream>
 #include <vector>
-#include <bitset>
 using namespace std;
 
 class FileSystem {
@@ -21,7 +21,11 @@ class FileSystem {
             cerr << "Erro ao abrir o arquivo fs.img" << endl;
         }
     }
-    ~FileSystem() { 
+    ~FileSystem() {
+        diskImage.close();
+        diskImage.open("fs.img", ios::out | ios::trunc);
+
+        root->tree->traverse([](TreeNodeType *node) { save_img(node, 0); });
         delete root;
         diskImage.close();
     }
@@ -49,7 +53,7 @@ class FileSystem {
         }
     }
 
-    static void printNode(TreeNodeType *node, int ignoreParam = 0) { cout << (node->type == DIRECTORY_TYPE ? "D" : "F") << " - " << node->name << "\n"; }
+    static void printNode(TreeNodeType *node) { cout << (node->type == DIRECTORY_TYPE ? "D" : "F") << " - " << node->name << "\n"; }
 
     void ls() { root->tree->traverse(printNode); }
 
@@ -74,13 +78,13 @@ class FileSystem {
         }
     }
 
-    void rm(string name, bool recursive = false){
+    void rm(string name, bool recursive = false) {
         TreeNodeType *node = root->tree->search(name);
-        if(node == NULL){
+        if (node == NULL) {
             cout << (!recursive ? "Arquivo não encontrado!" : "Pasta não encontrada!") << "\n";
             return;
         }
-        if(!recursive){
+        if (!recursive) {
             delete_file(node);
             return;
         }
@@ -115,9 +119,7 @@ class FileSystem {
         return node;
     }
 
-    void delete_file(TreeNodeType *file) {
-        root->tree->deletion(file);
-    }
+    void delete_file(TreeNodeType *file) { root->tree->deletion(file); }
 
     void delete_directory(TreeNodeType *dir) {
         dir->data.directory->parent->tree->deletion(dir);
@@ -126,9 +128,14 @@ class FileSystem {
 
     static void save_img(TreeNodeType *node, int h) {
         fstream diskImage("fs.img", ios::app);
-        if(node->type == FILE_TYPE){
-            diskImage << "F" << node->name << "\n";
-            diskImage << tab(h) << node->data.file->content.length() << " | " << node->data.file->content << "\n";
+        if (node->type == FILE_TYPE) {
+            diskImage << tab(h) << "F:" << pad_string(to_string(node->name.length()), 10) << node->name
+                      << pad_string(to_string(node->data.file->content.length()), 32) << node->data.file->content << "\n";
+            diskImage.flush();
+        } else {
+            diskImage << tab(h) << "D:" << pad_string(to_string(node->name.length()), 10) << node->name << "\n";
+            diskImage.flush();
+            node->data.directory->tree->traverse([h](TreeNodeType *childNode) { save_img(childNode, h + 1); });
         }
     }
 };

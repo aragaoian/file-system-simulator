@@ -1,4 +1,5 @@
 // Searching a key on a B-tree in childs++
+#include <functional>
 
 #include "structs.h"
 #include <iostream>
@@ -53,14 +54,13 @@ class TreeNode {
         return idx;
     }
 
-
     void deletion(TreeNodeType *k) {
         int idx = findKey(k);
 
         if (idx < n && keys[idx] == k) {
             if (leaf) {
                 removeFromLeaf(idx);
-            }else{
+            } else {
                 removeFromNonLeaf(idx);
             }
         } else {
@@ -73,9 +73,9 @@ class TreeNode {
 
             if (childs[idx]->n < t) fill(idx);
 
-            if (flag && idx > n){
+            if (flag && idx > n) {
                 childs[idx - 1]->deletion(k);
-            }else{
+            } else {
                 childs[idx]->deletion(k);
             }
         }
@@ -140,9 +140,9 @@ class TreeNode {
 
         else {
             if (idx != n)
-            merge(idx);
+                merge(idx);
             else
-            merge(idx - 1);
+                merge(idx - 1);
         }
         return;
     }
@@ -157,13 +157,12 @@ class TreeNode {
 
         if (!child->leaf) {
             for (int i = child->n; i >= 0; --i)
-            child->childs[i + 1] = child->childs[i];
+                child->childs[i + 1] = child->childs[i];
         }
 
         child->keys[0] = keys[idx - 1];
 
-        if (!child->leaf)
-            child->childs[0] = sibling->childs[sibling->n];
+        if (!child->leaf) child->childs[0] = sibling->childs[sibling->n];
 
         keys[idx - 1] = sibling->keys[sibling->n - 1];
 
@@ -180,8 +179,7 @@ class TreeNode {
 
         child->keys[(child->n)] = keys[idx];
 
-        if (!(child->leaf))
-            child->childs[(child->n) + 1] = sibling->childs[0];
+        if (!(child->leaf)) child->childs[(child->n) + 1] = sibling->childs[0];
 
         keys[idx] = sibling->keys[0];
 
@@ -190,7 +188,7 @@ class TreeNode {
 
         if (!sibling->leaf) {
             for (int i = 1; i <= sibling->n; ++i)
-            sibling->childs[i - 1] = sibling->childs[i];
+                sibling->childs[i - 1] = sibling->childs[i];
         }
 
         child->n += 1;
@@ -210,7 +208,7 @@ class TreeNode {
 
         if (!child->leaf) {
             for (int i = 0; i <= sibling->n; ++i)
-            child->childs[i + t] = sibling->childs[i];
+                child->childs[i + t] = sibling->childs[i];
         }
 
         for (int i = idx + 1; i < n; ++i)
@@ -251,11 +249,11 @@ class TreeNode {
         n = n + 1;
     }
 
-    void traverse(void (*func)(TreeNodeType *, int)) {
+    void traverse(function<void(TreeNodeType *)> func) {
         int i;
         for (i = 0; i < n; i++) {
             if (leaf == false) childs[i]->traverse(func);
-            func(keys[i], 0);
+            func(keys[i]);
         }
 
         if (leaf == false) childs[i]->traverse(func);
@@ -273,8 +271,8 @@ class TreeNode {
         return childs[i]->search(k);
     }
 
-    int height(TreeNode *node){
-        if(leaf) return 0;
+    int height(TreeNode *node) {
+        if (leaf) return 0;
         int i;
         int maxHeight = 0;
         for (i = 0; i < n; i++) {
@@ -296,7 +294,7 @@ class BTree {
         t = temp;
     }
 
-    void traverse(void (*func)(TreeNodeType *, int)) {
+    void traverse(function<void(TreeNodeType *)> func) {
         if (root != NULL) root->traverse(func);
     }
 
@@ -336,24 +334,14 @@ class BTree {
         if (root->n == 0) {
             TreeNode *tmp = root;
             if (root->leaf)
-            root = NULL;
+                root = NULL;
             else
-            root = root->childs[0];
+                root = root->childs[0];
 
             delete tmp;
         }
         return;
     }
-
-    int height(TreeNodeType *k){
-        if(!root){
-            cout << "The tree is empty\n";
-            return;
-        }
-        
-    }
-
-
 };
 
 struct Directory {
