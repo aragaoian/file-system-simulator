@@ -34,11 +34,9 @@ class FileSystem {
         disk_image.close();
     }
 
-
-
     void mkdir(string name) {
         TreeNodeType *node = root->tree->search(name);
-        if(node != NULL){
+        if (node != NULL) {
             cout << "Pasta com nome já existente" << "\n";
             return;
         }
@@ -48,12 +46,12 @@ class FileSystem {
 
     void touch(string name, string content) {
         TreeNodeType *node = root->tree->search(name);
-        if(node != NULL){
+        if (node != NULL) {
             cout << "Arquivo com nome já existente" << "\n";
             return;
         }
 
-        if(content.length() > 1000 * 1000){
+        if (content.length() > 1000 * 1000) {
             cout << "O arquivo não pode passar de 1MB" << "\n";
             return;
         }
@@ -75,7 +73,7 @@ class FileSystem {
         }
     }
 
-    void mount(){
+    void mount() {
         int i = 0;
         load_img(i, 0, root);
     }
@@ -105,19 +103,19 @@ class FileSystem {
         }
     }
 
-    void rm(string name, bool recursive = false) {
+    void rm(string name) {
         TreeNodeType *node = root->tree->search(name);
         if (node == NULL) {
             cout << "Arquivo ou pasta não encontrado!" << "\n";
             return;
         }
-        if(node->type == DIRECTORY_TYPE) {
-            if(!recursive){
-                cout << "Não é possível remover " << node->name << ": É uma pasta";
+        if (node->type == DIRECTORY_TYPE) {
+            if (!node->data.directory->tree->isEmpty()) {
+                cout << "Não é possível remover " << node->name << ", a pasta não está vazia!" << "\n";
                 return;
             }
             delete_directory(node);
-        }else{
+        } else {
             delete_file(node);
         }
     }
@@ -151,10 +149,10 @@ class FileSystem {
     }
 
     void go_to_root() {
-        if(root->parent != NULL){
+        if (root->parent != NULL) {
             root = root->parent;
             go_to_root();
-        }    
+        }
     }
 
     void delete_file(TreeNodeType *file) { root->tree->deletion(file); }
@@ -168,7 +166,7 @@ class FileSystem {
         fstream disk_image("fs.img", ios::app);
         if (node->type == FILE_TYPE) {
             disk_image << tab(h) << "F:" << pad_string(to_string(node->name.length()), 10) << node->name
-                      << pad_string(to_string(node->data.file->content.length()), 32) << node->data.file->content << "\n";
+                       << pad_string(to_string(node->data.file->content.length()), 32) << node->data.file->content << "\n";
             disk_image.flush();
         } else {
             disk_image << tab(h) << "D:" << pad_string(to_string(node->name.length()), 10) << node->name << "\n";
@@ -177,25 +175,25 @@ class FileSystem {
         }
     }
 
-    void load_img(int &i, int curr_depth, Directory *curr_dir){
-        while(i < disk_image_v.size()){
-            int tabs_size = get_tab_size(disk_image_v[i]);    
-            if(tabs_size <= curr_depth && tabs_size != 0) return; // chegou no fim do folder 
-            
+    void load_img(int &i, int curr_depth, Directory *curr_dir) {
+        while (i < disk_image_v.size()) {
+            int tabs_size = get_tab_size(disk_image_v[i]);
+            if (tabs_size <= curr_depth && tabs_size != 0) return; // chegou no fim do folder
+
             string line = disk_image_v[i].substr(tabs_size);
             vector<string> node_info = split(line, ":");
             string type = node_info[0];
             int name_size = stoi(node_info[1].substr(0, 10));
             string name = node_info[1].substr(10, name_size);
-            
-            if(type == "F"){
+
+            if (type == "F") {
                 int content_size = stoi(node_info[1].substr(10 + name_size, 32));
                 string content = node_info[1].substr(10 + name_size + 32, content_size);
                 TreeNodeType *node = create_txt_file(name, content);
                 curr_dir->tree->insert(node);
                 i++;
 
-            }else{
+            } else {
                 TreeNodeType *node = create_directory(name, curr_dir);
                 curr_dir->tree->insert(node);
                 i++;

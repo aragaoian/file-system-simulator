@@ -294,6 +294,8 @@ class BTree {
         t = temp;
     }
 
+    bool isEmpty() { return root == NULL; }
+
     void traverse(function<void(TreeNodeType *)> func) {
         if (root != NULL) root->traverse(func);
     }
