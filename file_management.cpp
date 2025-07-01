@@ -155,7 +155,10 @@ class FileSystem {
         }
     }
 
-    void delete_file(TreeNodeType *file) { root->tree->deletion(file); }
+    void delete_file(TreeNodeType *file) {
+        root->tree->deletion(file);
+        delete file;
+    }
 
     void delete_directory(TreeNodeType *dir) {
         dir->data.directory->parent->tree->deletion(dir);
