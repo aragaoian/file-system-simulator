@@ -271,16 +271,6 @@ class TreeNode {
         return childs[i]->search(k);
     }
 
-    int height(TreeNode *node) {
-        if (leaf) return 0;
-        int i;
-        int maxHeight = 0;
-        for (i = 0; i < n; i++) {
-            maxHeight = max(maxHeight, height(childs[i]));
-        }
-        return 1 + maxHeight;
-    }
-
     friend class BTree;
 };
 
